@@ -1,0 +1,15 @@
+services:
+  postgres: 
+    image: postgres:16 
+    restart: unless-stopped 
+    environment:
+      POSTGRES_USER: afterglow
+      POSTGRES_PASSWORD: afterglow-dev 
+      POSTGRES_DB: afterglow 
+    ports:
+      - "5432:5432" 
+    volumes: 
+      - "afterglow_pgdata:/var/lib/postgresql/data" 
+  
+volumes:
+  afterglow_pgdata: 
