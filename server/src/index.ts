@@ -1,7 +1,7 @@
 import express from "express"; 
 import cors from "cors"; 
 import dotenv from "dotenv"; 
-import { pool } from './db';
+import {  prisma } from './db';
 
 dotenv.config(); 
 
@@ -10,13 +10,13 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/health", async (_req, res) => {
-    try {
-        await pool.query("SELECT 1"); 
-        res.json({ status: "ok", db: "connected" });
-    } catch (err) {
-        res.status(500).json({ status: "error", message: "db disconnected" });
-    }
-}); 
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", db: "connected" });
+  } catch (err) {
+    res.status(500).json({ status: "error", message: "db disconnected" });
+  }
+});
 
 const PORT = process.env.PORT || 4000; 
 app.listen(PORT, () => {

@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  name         String
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  poolsOwned   Pool[]        @relation("PoolOwner")
+  poolMembers  PoolMember[]
+  photos       Photo[]
+
+  @@map("users")
+}
+
+model Pool {
+  id          Int          @id @default(autoincrement())
+  name        String
+  ownerId     Int          @map("owner_id")
+  inviteCode  String       @unique @map("invite_code")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  owner       User         @relation("PoolOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     PoolMember[]
+  photos      Photo[]
+
+  @@map("pools")
+}
+
+model PoolMember {
+  id       Int      @id @default(autoincrement())
+  poolId   Int      @map("pool_id")
+  userId   Int      @map("user_id")
+  role     String   @default("member")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  pool     Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([poolId, userId])
+  @@map("pool_members")
+}
+
+model Photo {
+  id           Int       @id @default(autoincrement())
+  poolId       Int       @map("pool_id")
+  uploaderId   Int       @map("uploader_id")
+  storageUrl   String    @map("storage_url")
+  thumbnailUrl String?   @map("thumbnail_url")
+  takenAt      DateTime? @map("taken_at")
+  uploadedAt   DateTime  @default(now()) @map("uploaded_at")
+
+  pool         Pool      @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  uploader     User      @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
