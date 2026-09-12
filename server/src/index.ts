@@ -5,6 +5,7 @@ import {  prisma } from './db';
 
 import authRouter from "./routes/auth";
 import poolRouter from "./routes/pool";
+import photoRouter from "./routes/photo";
 
 dotenv.config(); 
 
@@ -23,6 +24,8 @@ app.get("/health", async (_req, res) => {
 
 app.use("/auth", authRouter);
 app.use("/pools", poolRouter);
+app.use("/photos", photoRouter); 
+app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 4000; 
 app.listen(PORT, () => {
