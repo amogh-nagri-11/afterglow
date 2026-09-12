@@ -3,6 +3,9 @@ import cors from "cors";
 import dotenv from "dotenv"; 
 import {  prisma } from './db';
 
+import authRouter from "./routes/auth";
+import poolRouter from "./routes/pool";
+
 dotenv.config(); 
 
 const app = express(); 
@@ -17,6 +20,9 @@ app.get("/health", async (_req, res) => {
     res.status(500).json({ status: "error", message: "db disconnected" });
   }
 });
+
+app.use("/auth", authRouter);
+app.use("/pools", poolRouter);
 
 const PORT = process.env.PORT || 4000; 
 app.listen(PORT, () => {
