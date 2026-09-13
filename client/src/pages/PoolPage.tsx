@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { ArrowLeft, Check, CircleAlert, Copy, Link2, Lock, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, Copy, Link2, LoaderCircle, Lock, Sparkles, Trash2 } from "lucide-react";
 import { AvatarStack } from "../components/Avatar";
 import { Lightbox } from "../components/Lightbox";
+import { Modal } from "../components/Modal";
 import { Scene } from "../components/Scene";
 import { Uploader } from "../components/Uploader";
 import { api, ApiError, assetUrl, errorMessage, type Photo, type PoolDetail } from "../lib/api";
@@ -20,6 +21,10 @@ export default function PoolPage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [error, setError] = useState<ApiError | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Photo | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -36,6 +41,7 @@ export default function PoolPage() {
       .then(([poolRes, photoRes]) => {
         if (cancelled) return;
         setPool(poolRes.pool);
+        setRole(poolRes.role);
         setPhotos(photoRes.photos);
       })
       .catch((err) => {
@@ -67,6 +73,31 @@ export default function PoolPage() {
   }, [photos]);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+
+  // Mirrors the server rule: uploader or pool owner
+  const canDelete = useCallback((photo: Photo) => photo.uploaderId === user?.id || role === "owner", [user, role]);
+
+  const closeDelete = useCallback(() => {
+    setPendingDelete(null);
+    setDeleteError(null);
+  }, []);
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.photos.remove(pendingDelete.poolId, pendingDelete.id);
+      const remaining = photos.length - 1;
+      setPhotos((prev) => prev.filter((p) => p.id !== pendingDelete.id));
+      setLightboxIndex((i) => (i === null || remaining === 0 ? null : Math.min(i, remaining - 1)));
+      setPendingDelete(null);
+    } catch (err) {
+      setDeleteError(errorMessage(err));
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (error) {
     const forbidden = error.status === 403 || error.status === 404;
@@ -149,10 +180,10 @@ export default function PoolPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                   {group.items.map(({ photo, index }) => (
+                    <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl bg-ink-800">
                     <button
-                      key={photo.id}
                       onClick={() => setLightboxIndex(index)}
-                      className="group relative aspect-square overflow-hidden rounded-xl bg-ink-800 focus-visible:outline-2 focus-visible:outline-rose-300"
+                      className="block h-full w-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-rose-300"
                     >
                       <img
                         src={assetUrl(photo.thumbnailUrl ?? photo.storageUrl)}
@@ -165,6 +196,16 @@ export default function PoolPage() {
                         <span className="shrink-0 text-white/60">{timeAgo(photo.uploadedAt)}</span>
                       </div>
                     </button>
+                    {canDelete(photo) && (
+                      <button
+                        onClick={() => setPendingDelete(photo)}
+                        aria-label="Delete photo"
+                        className="absolute top-2 right-2 grid size-8 place-items-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur transition group-hover:opacity-100 hover:bg-rose-500 focus-visible:opacity-100"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -174,7 +215,40 @@ export default function PoolPage() {
       </section>
 
       {lightboxIndex !== null && (
-        <Lightbox photos={photos} index={lightboxIndex} onClose={closeLightbox} onNavigate={setLightboxIndex} />
+        <Lightbox
+          photos={photos}
+          index={lightboxIndex}
+          onClose={closeLightbox}
+          onNavigate={setLightboxIndex}
+          canDelete={canDelete}
+          onDelete={setPendingDelete}
+          paused={pendingDelete !== null}
+        />
+      )}
+
+      {pendingDelete && (
+        <Modal
+          title="Delete this photo?"
+          description={
+            pendingDelete.uploaderId === user?.id
+              ? "It will be removed from the pool for everyone. This can't be undone."
+              : `This was added by ${pendingDelete.uploader?.name ?? "another member"}. It will be removed for everyone. This can't be undone.`
+          }
+          onClose={closeDelete}
+        >
+          {pendingDelete.thumbnailUrl && (
+            <img src={assetUrl(pendingDelete.thumbnailUrl)} alt="" className="h-40 w-full rounded-2xl object-cover" />
+          )}
+          {deleteError && <p className="mt-4 text-sm text-rose-300">{deleteError}</p>}
+          <div className="mt-6 flex gap-3">
+            <button className="btn btn-ghost flex-1" onClick={closeDelete} disabled={deleting}>
+              Cancel
+            </button>
+            <button className="btn flex-1 bg-rose-500 text-white hover:bg-rose-400" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? <LoaderCircle className="size-4 animate-spin" /> : <><Trash2 className="size-4" /> Delete</>}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

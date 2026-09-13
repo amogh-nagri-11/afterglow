@@ -1,18 +1,28 @@
 import { useEffect } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Trash2, X } from "lucide-react";
 import { assetUrl, type Photo } from "../lib/api";
 import { timeAgo } from "../lib/format";
 import { Avatar } from "./Avatar";
 
-type Props = { photos: Photo[]; index: number; onClose: () => void; onNavigate: (index: number) => void };
+type Props = {
+  photos: Photo[];
+  index: number;
+  onClose: () => void;
+  onNavigate: (index: number) => void;
+  canDelete?: (photo: Photo) => boolean;
+  onDelete?: (photo: Photo) => void;
+  /** Ignore keyboard shortcuts, e.g. while a confirm dialog is open on top */
+  paused?: boolean;
+};
 
-export function Lightbox({ photos, index, onClose, onNavigate }: Props) {
+export function Lightbox({ photos, index, onClose, onNavigate, canDelete, onDelete, paused = false }: Props) {
   const photo = photos[index];
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (paused) return;
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowLeft" && hasPrev) onNavigate(index - 1);
       if (e.key === "ArrowRight" && hasNext) onNavigate(index + 1);
@@ -24,7 +34,7 @@ export function Lightbox({ photos, index, onClose, onNavigate }: Props) {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [index, hasPrev, hasNext, onClose, onNavigate]);
+  }, [index, hasPrev, hasNext, onClose, onNavigate, paused]);
 
   if (!photo) return null;
 
@@ -41,6 +51,14 @@ export function Lightbox({ photos, index, onClose, onNavigate }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {onDelete && canDelete?.(photo) && (
+            <button
+              onClick={() => onDelete(photo)}
+              className="flex items-center gap-2 rounded-full px-3 py-2 text-sm text-sand-200 hover:bg-rose-500/20 hover:text-rose-200"
+            >
+              <Trash2 className="size-4" /> <span className="hidden sm:inline">Delete</span>
+            </button>
+          )}
           <a
             href={assetUrl(photo.storageUrl)}
             target="_blank"

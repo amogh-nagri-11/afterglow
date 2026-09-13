@@ -168,5 +168,7 @@ export const api = {
   photos: {
     list: (poolId: number) => request<{ photos: Photo[] }>(`/photos/${poolId}`),
     upload: uploadPhoto,
+    remove: (poolId: number, photoId: number) =>
+      request<null>(`/photos/${poolId}/${photoId}`, { method: "DELETE" }),
   },
 };

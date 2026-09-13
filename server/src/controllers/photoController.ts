@@ -3,6 +3,7 @@ import { AuthRequest } from "../middleware/authMiddleware";
 import { prisma } from "../db";
 import sharp from "sharp";
 import path from "path";
+import fs from "fs/promises";
 
 const uploadPhoto = async (req: AuthRequest, res: Response) => {
     const { poolId } = req.params; 
@@ -68,4 +69,42 @@ const getPoolPhotos = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export { uploadPhoto, getPoolPhotos };
+// Only the uploader or the pool owner may delete a photo
+const deletePhoto = async (req: AuthRequest, res: Response) => {
+  const poolId = Number(req.params.poolId);
+  const photoId = Number(req.params.photoId);
+
+  if (!Number.isInteger(poolId) || !Number.isInteger(photoId)) {
+    return res.status(404).json({ error: "photo not found" });
+  }
+
+  try {
+    const photo = await prisma.photo.findFirst({
+      where: { id: photoId, poolId },
+      include: { pool: { select: { ownerId: true } } },
+    });
+
+    if (!photo) {
+      return res.status(404).json({ error: "photo not found" });
+    }
+
+    if (photo.uploaderId !== req.userId && photo.pool.ownerId !== req.userId) {
+      return res.status(403).json({ error: "only the uploader or pool owner can delete this photo" });
+    }
+
+    await prisma.photo.delete({ where: { id: photo.id } });
+
+    // Remove files once the row is gone; a missing file shouldn't fail the request
+    const files = [photo.storageUrl, photo.thumbnailUrl].filter((url): url is string => Boolean(url));
+    await Promise.all(
+      files.map((url) => fs.unlink(path.join(__dirname, "../../uploads", path.basename(url))).catch(() => {})),
+    );
+
+    res.status(204).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "failed to delete photo" });
+  }
+};
+
+export { uploadPhoto, getPoolPhotos, deletePhoto };
