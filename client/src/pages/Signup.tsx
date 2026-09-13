@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, CircleAlert, LoaderCircle } from "lucide-react";
 import { AuthLayout } from "../components/AuthLayout";
 import { GoogleButton, OrDivider, googleEnabled } from "../components/GoogleButton";
+import { PasswordInput } from "../components/PasswordInput";
 import { errorMessage } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
@@ -63,7 +64,7 @@ export default function Signup() {
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm text-sand-200">Password</span>
-          <input className="field" type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
+          <PasswordInput autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
         </label>
 
         {error && (

@@ -88,7 +88,29 @@ export function Uploader({ poolId, onUploaded }: { poolId: number; onUploaded: (
 
   return (
     <div className="space-y-3">
+      {/* Kept outside the drop zone so the programmatic click doesn't bubble back into it */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          addFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload photos: drop files here or browse your device"
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
         onDragEnter={(e) => onDrag(e, true)}
         onDragOver={(e) => onDrag(e, true)}
         onDragLeave={(e) => onDrag(e, false)}
@@ -97,29 +119,20 @@ export function Uploader({ poolId, onUploaded }: { poolId: number; onUploaded: (
           setDragging(false);
           addFiles(e.dataTransfer.files);
         }}
-        className={`relative flex flex-col items-center gap-3 rounded-3xl border border-dashed px-6 py-10 text-center transition ${
-          dragging ? "border-rose-300/70 bg-rose-300/[.06]" : "border-white/12 bg-white/[.02] hover:border-white/25"
+        className={`group relative flex cursor-pointer flex-col items-center gap-3 rounded-3xl border border-dashed px-6 py-10 text-center transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300 ${
+          dragging ? "border-rose-300/70 bg-rose-300/[.06]" : "border-white/12 bg-white/[.02] hover:border-white/25 hover:bg-white/[.04]"
         }`}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(e) => {
-            addFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        <span className={`grid size-12 place-items-center rounded-full transition ${dragging ? "bg-glow text-ink-950" : "bg-white/5 text-sand-200"}`}>
+        <span
+          className={`grid size-12 place-items-center rounded-full transition duration-300 group-hover:scale-110 group-hover:bg-glow group-hover:text-ink-950 group-hover:shadow-[0_8px_30px_-8px_rgba(255,125,125,.6)] ${
+            dragging ? "scale-110 bg-glow text-ink-950" : "bg-white/5 text-sand-200"
+          }`}
+        >
           <CloudUpload className="size-5" />
         </span>
         <p className="text-sand-200">
           Drop photos here or{" "}
-          <button type="button" onClick={() => inputRef.current?.click()} className="text-glow font-medium underline-offset-4 hover:underline">
-            browse your device
-          </button>
+          <span className="text-glow font-medium underline-offset-4 group-hover:underline">browse your device</span>
         </p>
         <p className="text-xs text-sand-500">JPG, PNG or WebP · up to 15 MB each · originals are kept at full resolution</p>
       </div>
