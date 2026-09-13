@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/authMiddleware";
-import { createPool, joinPool } from "../controllers/poolController";
+import { createPool, joinPool, listMyPools, getPool } from "../controllers/poolController";
 
-const router = Router(); 
+const router = Router();
 
-router.post("/", requireAuth, createPool); 
+router.get("/", requireAuth, listMyPools);
+router.post("/", requireAuth, createPool);
 router.post("/join", requireAuth, joinPool);
+router.get("/:poolId", requireAuth, getPool);
 
-export default router; 
-
+export default router;

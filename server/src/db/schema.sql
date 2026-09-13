@@ -1,7 +1,9 @@
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
+  google_id TEXT UNIQUE,
+  avatar_url TEXT,
   name TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );

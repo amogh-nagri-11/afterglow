@@ -43,4 +43,29 @@ const uploadPhoto = async (req: AuthRequest, res: Response) => {
     }
 }; 
 
-export { uploadPhoto };
+const getPoolPhotos = async (req: AuthRequest, res: Response) => {
+  const { poolId } = req.params;
+
+  try {
+    const membership = await prisma.poolMember.findUnique({
+      where: { poolId_userId: { poolId: Number(poolId), userId: req.userId! } },
+    });
+
+    if (!membership) {
+      return res.status(403).json({ error: "not a member of this pool" });
+    }
+
+    const photos = await prisma.photo.findMany({
+      where: { poolId: Number(poolId) },
+      orderBy: { uploadedAt: "desc" },
+      include: { uploader: { select: { id: true, name: true, avatarUrl: true } } },
+    });
+
+    res.json({ photos });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "failed to fetch photos" });
+  }
+};
+
+export { uploadPhoto, getPoolPhotos };
