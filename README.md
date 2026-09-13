@@ -32,6 +32,16 @@ npm run dev
 
 The frontend uses Google Identity Services to get an ID token. `POST /auth/google` verifies that token and returns an Afterglow JWT. If a Google account's email matches an existing email/password user, the two are linked. The Google button is hidden when `VITE_GOOGLE_CLIENT_ID` is not set.
 
+## Photo storage
+
+`STORAGE_DRIVER=local` (the default) saves photos to `server/uploads`. For production use Cloudflare R2:
+
+1. In the Cloudflare dashboard, enable **R2** and create a bucket (e.g. `afterglow-photos`). Leave public access off.
+2. Under **R2 → Manage API tokens**, create a token with **Object Read & Write** permission, applied to **that bucket only**.
+3. In `server/.env` set `STORAGE_DRIVER=r2`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET`.
+
+The bucket stays private: the API returns signed URLs that expire after an hour. Photos uploaded before switching to R2 keep being served from `server/uploads`.
+
 ## API
 
 | Method | Path | Auth | Description |

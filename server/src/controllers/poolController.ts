@@ -2,6 +2,7 @@ import { Response } from "express";
 import { prisma } from "../db";
 import crypto from "crypto";
 import { AuthRequest } from "../middleware/authMiddleware";
+import { storage } from "../storage";
 
 const createPool = async (req: AuthRequest, res: Response) => {
     const { name } = req.body;
@@ -71,11 +72,23 @@ const listMyPools = async (req: AuthRequest, res: Response) => {
             orderBy: { createdAt: "desc" },
             include: {
                 _count: { select: { members: true, photos: true } },
-                photos: { orderBy: { uploadedAt: "desc" }, take: 4, select: { id: true, thumbnailUrl: true } },
+                photos: { orderBy: { uploadedAt: "desc" }, take: 4, select: { id: true, thumbnailKey: true } },
             },
         });
 
-        res.json({ pools });
+        const withCovers = await Promise.all(
+            pools.map(async ({ photos, ...pool }) => ({
+                ...pool,
+                photos: await Promise.all(
+                    photos.map(async ({ id, thumbnailKey }) => ({
+                        id,
+                        thumbnailUrl: thumbnailKey ? await storage.url(thumbnailKey) : null,
+                    })),
+                ),
+            })),
+        );
+
+        res.json({ pools: withCovers });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "failed to fetch pools" });

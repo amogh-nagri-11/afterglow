@@ -60,8 +60,11 @@ model Photo {
   id           Int       @id @default(autoincrement())
   poolId       Int       @map("pool_id")
   uploaderId   Int       @map("uploader_id")
-  storageUrl   String    @map("storage_url")
-  thumbnailUrl String?   @map("thumbnail_url")
+  // Object storage keys (e.g. "pools/12/ab34.jpg"); older rows hold "/uploads/<file>" paths.
+  // Columns keep their original names so no data migration is needed.
+  storageKey   String    @map("storage_url")
+  thumbnailKey String?   @map("thumbnail_url")
+  sizeBytes    Int       @default(0) @map("size_bytes")
   takenAt      DateTime? @map("taken_at")
   uploadedAt   DateTime  @default(now()) @map("uploaded_at")
 

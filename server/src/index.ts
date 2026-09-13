@@ -2,12 +2,15 @@ import express from "express";
 import cors from "cors"; 
 import dotenv from "dotenv"; 
 import {  prisma } from './db';
+import { initStorage } from "./storage";
 
 import authRouter from "./routes/auth";
 import poolRouter from "./routes/pool";
 import photoRouter from "./routes/photo";
 
-dotenv.config(); 
+dotenv.config();
+
+const storageDriver = initStorage(); 
 
 const app = express(); 
 app.use(cors()); 
@@ -29,5 +32,5 @@ app.use("/uploads", express.static("uploads"));
 
 const PORT = process.env.PORT || 4000; 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`); 
+    console.log(`Server running on http://localhost:${PORT} (storage: ${storageDriver})`); 
 });

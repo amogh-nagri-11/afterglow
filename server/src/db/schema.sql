@@ -31,6 +31,7 @@ CREATE TABLE photos (
   uploader_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   storage_url TEXT NOT NULL,
   thumbnail_url TEXT,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
   taken_at TIMESTAMPTZ,
   uploaded_at TIMESTAMPTZ DEFAULT now()
 );
