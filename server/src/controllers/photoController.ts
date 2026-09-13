@@ -1,6 +1,8 @@
 import { Response } from "express"; 
 import { AuthRequest } from "../middleware/authMiddleware";
 import { prisma } from "../db";
+import sharp from "sharp";
+import path from "path";
 
 const uploadPhoto = async (req: AuthRequest, res: Response) => {
     const { poolId } = req.params; 
@@ -18,11 +20,19 @@ const uploadPhoto = async (req: AuthRequest, res: Response) => {
             return res.status(403).json({ error: "not a member of this pool" }); 
         }
 
+        const thumbnailFilename = `thumb-${req.file.filename}`; 
+        const thumbnailPath = path.join(__dirname, "../../uploads", thumbnailFilename); 
+
+        await sharp(req.file.path) 
+            .resize(400, 400, { fit: "cover" })
+            .toFile(thumbnailPath);  
+
         const photo = await prisma.photo.create({
             data: {
                 poolId: Number(poolId), 
                 uploaderId: req.userId!, 
                 storageUrl: `/uploads/${req.file.filename}`, 
+                thumbnailUrl: `/uploads/${thumbnailFilename}`
             }, 
         });
 
